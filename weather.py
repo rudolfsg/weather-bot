@@ -4,16 +4,22 @@ import numpy as np
 import seaborn as sns
 import json
 import dataframe_image
+import os
 
 base_url = "https://api.open-meteo.com/v1/forecast?"
 
-with open("secrets.json") as f:
-    cfg = json.load(f)
+# with open("secrets.json") as f:
+#     cfg = json.load(f)
 
-lat = cfg["lat"]
-lon = cfg["lon"]
-telegram_key = cfg["telegram_key"]
-telegram_chatid = cfg["telegram_chatid"]
+# lat = cfg["lat"]
+# lon = cfg["lon"]
+# telegram_key = cfg["telegram_key"]
+# telegram_chatid = cfg["telegram_chatid"]
+
+lat = os.environ["lat"]
+lon = os.environ["lon"]
+telegram_key = os.environ["telegram_key"]
+telegram_chatid = os.environ["telegram_chatid"]
 
 weather_params = {
     "latitude": lat,
@@ -188,33 +194,35 @@ def style_hourly_weather(hourly_weather):
     return styler
 
 
-current, hourly = get_weather()
+def lambda_handler(event, context):
 
-caption = f"Currently {current['description']}."
-extras = []
+    current, hourly = get_weather()
 
-if hourly.head(10)["rain"].gt(0).any():
-    extras.append("rain")
-if hourly.head(10)["rain"].gt(8).any():
-    extras.append("be windy")
-if extras:
-    caption += ". It's going to " + " and ".join(extras) + "."
+    caption = f"Currently {current['description']}."
+    extras = []
 
-styler = style_hourly_weather(hourly)
+    if hourly.head(10)["rain"].gt(0).any():
+        extras.append("rain")
+    if hourly.head(10)["rain"].gt(8).any():
+        extras.append("be windy")
+    if extras:
+        caption += ". It's going to " + " and ".join(extras) + "."
 
-dataframe_image.export(styler, "weather.png")
-files = {"photo": open("weather.png", "rb")}
+    styler = style_hourly_weather(hourly)
 
-telegram_params = {
-    "chat_id": telegram_chatid,
-    "disable_notification": False,
-    "caption": caption,
-}
+    dataframe_image.export(styler, "weather.png")
+    files = {"photo": open("weather.png", "rb")}
 
-r = requests.post(
-    f"https://api.telegram.org/bot{telegram_key}/sendPhoto",
-    params=telegram_params,
-    files=files,
-)
+    telegram_params = {
+        "chat_id": telegram_chatid,
+        "disable_notification": False,
+        "caption": caption,
+    }
 
-print(r.ok)
+    r = requests.post(
+        f"https://api.telegram.org/bot{telegram_key}/sendPhoto",
+        params=telegram_params,
+        files=files,
+    )
+
+    return {"statusCode": r.status_code, "body": r.json()}
