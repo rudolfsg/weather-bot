@@ -16,10 +16,6 @@ lon = cfg["lon"]
 telegram_key = cfg["telegram_key"]
 telegram_chatid = cfg["telegram_chatid"]
 
-# lat = os.environ["lat"]
-# lon = os.environ["lon"]
-# telegram_key = os.environ["telegram_key"]
-# telegram_chatid = os.environ["telegram_chatid"]
 
 weather_params = {
     "latitude": lat,
@@ -194,7 +190,7 @@ def style_hourly_weather(hourly_weather):
     return styler
 
 
-def lambda_handler(event, context):
+def run():
 
     current, hourly = get_weather()
 
@@ -211,7 +207,7 @@ def lambda_handler(event, context):
     styler = style_hourly_weather(hourly)
 
     # need headless chromium to keep formatting
-    dataframe_image.export(styler, "weather.png", table_conversion="matplotlib") 
+    dataframe_image.export(styler, "weather.png", ) # table_conversion="matplotlib"
     files = {"photo": open("weather.png", "rb")}
 
     telegram_params = {
@@ -227,3 +223,5 @@ def lambda_handler(event, context):
     )
 
     return {"statusCode": r.status_code, "body": r.json()}
+
+run()

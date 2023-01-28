@@ -2,4 +2,5 @@ pandas==1.5.3
 seaborn==0.12.2
 Jinja2==3.1.2
 dataframe_image==0.1.5
+lxml
 requests
