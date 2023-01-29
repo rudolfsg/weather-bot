@@ -87,6 +87,10 @@ def get_weather():
     hourly_weather = (
         pd.DataFrame(data["hourly"]).set_index("time").drop(columns=["weathercode"])
     )
+    hourly_weather.index = pd.to_datetime(hourly_weather.index, utc=True)
+    hourly_weather = hourly_weather.sort_index().loc[
+        hourly_weather.index > pd.to_datetime("now", utc=True)
+    ]
     return current_weather, hourly_weather
 
 
@@ -103,10 +107,7 @@ def style_hourly_weather(hourly_weather):
             "cloudcover": "Clouds",
         }
     )
-    hourly_weather.index = pd.to_datetime(hourly_weather.index, utc=True)
-    hourly_weather = hourly_weather.sort_index().loc[
-        hourly_weather.index > pd.to_datetime("now", utc=True)
-    ]
+
     hourly_weather = hourly_weather.head(24).iloc[::2, :].T
     hourly_weather.columns = [x.strftime("%H:%M") for x in hourly_weather.columns]
 
@@ -204,10 +205,19 @@ def run():
     if extras:
         caption += ". It's going to " + " and ".join(extras) + "."
 
+    caption += "\n" + hourly.head(12)["temperature_2m"].agg(
+        {"H:": "max", "L:": "min"}
+    ).astype(str).apply(lambda x: x + "℃").to_string().replace(" ", "").replace(
+        "\n", ", "
+    )
+
     styler = style_hourly_weather(hourly)
 
     # need headless chromium to keep formatting
-    dataframe_image.export(styler, "weather.png", ) # table_conversion="matplotlib"
+    dataframe_image.export(
+        styler,
+        "weather.png",
+    )  # table_conversion="matplotlib"
     files = {"photo": open("weather.png", "rb")}
 
     telegram_params = {
@@ -223,5 +233,6 @@ def run():
     )
 
     return {"statusCode": r.status_code, "body": r.json()}
+
 
 run()
