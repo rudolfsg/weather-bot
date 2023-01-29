@@ -194,7 +194,7 @@ def run():
 
     current, hourly = get_weather()
 
-    caption = f"Currently {current['description']}."
+    caption = f"Currently {current['description']}, {current['temperature']}℃."
     extras = []
 
     if hourly.head(10)["rain"].gt(0).any():
